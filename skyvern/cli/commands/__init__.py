@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from skyvern._cli_bootstrap import configure_cli_bootstrap_logging as _configure_cli_bootstrap_logging
 from skyvern.utils.env_paths import resolve_backend_env_path
 
+from ..about import about_app
 from ..auth_command import login as login_command
 from ..auth_command import signup as signup_command
 from ..block import block_app
@@ -72,6 +73,7 @@ cli_app.add_typer(
     help="Secure credential management (use this for interactive `add`).",
 )
 cli_app.add_typer(docs_app, name="docs", help="Open Skyvern documentation.")
+cli_app.add_typer(about_app, name="about", help="Show a description of what Skyvern is and does.")
 cli_app.add_typer(status_app, name="status", help="Check if Skyvern services are running.")
 cli_app.add_typer(stop_app, name="stop", help="Stop Skyvern services.")
 init_app = typer.Typer(

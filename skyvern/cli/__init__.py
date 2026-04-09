@@ -10,8 +10,10 @@ __all__ = [
     "docs_app",
     "status_app",
     "init_app",
+    "about_app",
 ]
 
+from .about import about_app
 from .commands import cli_app, init_app  # init_app is defined in commands.py
 from .credentials import credentials_app
 from .docs import docs_app
