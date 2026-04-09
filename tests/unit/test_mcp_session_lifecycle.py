@@ -609,3 +609,34 @@ async def test_session_create_persists_active_api_key_hash_in_session_state(
     assert current.context == BrowserContext(mode="cloud_session", session_id="pbs_123")
     assert current.api_key_hash == session_manager._api_key_hash("sk_key_create")
     assert current.api_key_hash != "sk_key_create"
+
+
+@pytest.mark.asyncio
+async def test_session_create_returns_invalid_input_for_out_of_range_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """skyvern_browser_session_create should return INVALID_INPUT when timeout is out of range."""
+    fake_skyvern = MagicMock()
+    monkeypatch.setattr(mcp_session, "get_skyvern", lambda: fake_skyvern)
+
+    # Use the real do_session_create so the ValueError propagates
+    result = await mcp_session.skyvern_browser_session_create(timeout=0)
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == mcp_session.ErrorCode.INVALID_INPUT
+    assert "Session timeout must be between" in result["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_session_create_returns_invalid_input_for_excessive_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """skyvern_browser_session_create should return INVALID_INPUT when timeout exceeds maximum."""
+    fake_skyvern = MagicMock()
+    monkeypatch.setattr(mcp_session, "get_skyvern", lambda: fake_skyvern)
+
+    result = await mcp_session.skyvern_browser_session_create(timeout=9999)
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == mcp_session.ErrorCode.INVALID_INPUT
+    assert "Session timeout must be between" in result["error"]["message"]

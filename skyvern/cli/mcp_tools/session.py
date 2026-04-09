@@ -107,7 +107,7 @@ async def skyvern_browser_session_create(
 
             browser, result = await do_session_create(
                 skyvern,
-                timeout=timeout or 60,
+                timeout=timeout if timeout is not None else 60,
                 proxy_location=proxy_location,
                 local=local,
                 headless=headless,
@@ -126,9 +126,9 @@ async def skyvern_browser_session_create(
                 ok=False,
                 timing_ms=timer.timing_ms,
                 error=make_error(
-                    ErrorCode.SDK_ERROR,
+                    ErrorCode.INVALID_INPUT,
                     str(e),
-                    "Cloud sessions require SKYVERN_API_KEY. Check your environment.",
+                    "Check timeout is between 5 and 1440 minutes and SKYVERN_API_KEY is set.",
                 ),
             )
         except Exception as e:

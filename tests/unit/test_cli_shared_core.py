@@ -15,7 +15,13 @@ from skyvern.cli.core.guards import (
     validate_button,
     validate_wait_until,
 )
-from skyvern.cli.core.session_ops import do_session_close, do_session_create, do_session_list
+from skyvern.cli.core.session_ops import (
+    SESSION_TIMEOUT_MAX,
+    SESSION_TIMEOUT_MIN,
+    do_session_close,
+    do_session_create,
+    do_session_list,
+)
 
 # ---------------------------------------------------------------------------
 # guards.py
@@ -232,3 +238,45 @@ async def test_do_session_list() -> None:
     assert len(result) == 1
     assert result[0].session_id == "pbs_1"
     assert result[0].available is True
+
+
+@pytest.mark.asyncio
+async def test_do_session_create_rejects_timeout_below_min() -> None:
+    skyvern = MagicMock()
+
+    with pytest.raises(ValueError, match="Session timeout must be between"):
+        await do_session_create(skyvern, timeout=SESSION_TIMEOUT_MIN - 1)
+
+
+@pytest.mark.asyncio
+async def test_do_session_create_rejects_timeout_above_max() -> None:
+    skyvern = MagicMock()
+
+    with pytest.raises(ValueError, match="Session timeout must be between"):
+        await do_session_create(skyvern, timeout=SESSION_TIMEOUT_MAX + 1)
+
+
+@pytest.mark.asyncio
+async def test_do_session_create_accepts_boundary_timeouts() -> None:
+    skyvern = MagicMock()
+    browser_mock = MagicMock()
+    browser_mock.browser_session_id = "pbs_min"
+    skyvern.launch_cloud_browser = AsyncMock(return_value=browser_mock)
+
+    _, result = await do_session_create(skyvern, timeout=SESSION_TIMEOUT_MIN)
+    assert result.timeout_minutes == SESSION_TIMEOUT_MIN
+
+    browser_mock.browser_session_id = "pbs_max"
+    _, result = await do_session_create(skyvern, timeout=SESSION_TIMEOUT_MAX)
+    assert result.timeout_minutes == SESSION_TIMEOUT_MAX
+
+
+@pytest.mark.asyncio
+async def test_do_session_create_local_skips_timeout_validation() -> None:
+    """Local browser sessions do not have a server-enforced timeout, so validation is skipped."""
+    skyvern = MagicMock()
+    skyvern.launch_local_browser = AsyncMock(return_value=MagicMock())
+
+    # An out-of-range timeout should be ignored for local sessions
+    browser, result = await do_session_create(skyvern, timeout=0, local=True)
+    assert result.local is True
