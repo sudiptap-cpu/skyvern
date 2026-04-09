@@ -7,6 +7,9 @@ from typing import Any
 
 from skyvern.schemas.runs import ProxyLocation
 
+SESSION_TIMEOUT_MIN = 5
+SESSION_TIMEOUT_MAX = 1440  # 24 hours in minutes
+
 
 @dataclass
 class SessionCreateResult:
@@ -40,6 +43,11 @@ async def do_session_create(
     headless: bool = False,
 ) -> tuple[Any, SessionCreateResult]:
     """Create browser session. Returns (browser, result)."""
+    if not local and not (SESSION_TIMEOUT_MIN <= timeout <= SESSION_TIMEOUT_MAX):
+        raise ValueError(
+            f"Session timeout must be between {SESSION_TIMEOUT_MIN} and {SESSION_TIMEOUT_MAX} minutes, got {timeout}"
+        )
+
     if local:
         browser = await skyvern.launch_local_browser(headless=headless)
         return browser, SessionCreateResult(session_id=None, local=True, headless=headless)
